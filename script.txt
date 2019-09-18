@@ -1,0 +1,130 @@
+
+
+Skip to content
+Using Gmail with screen readers
+in:sent 
+
+5 of 171
+test4
+
+Shubhro Shekhar <shubhroshekhar@gmail.com>
+Attachments
+Sun, Sep 15, 10:19 PM (3 days ago)
+to Shambhabi
+
+
+Attachments area
+
+requires("1.33s"); 
+
+dir=getDirectory("Choose a Directory"); 
+print(dir); 
+splitDir=dir + "\Split\\";
+print(splitDir); 
+File.makeDirectory(splitDir); 
+list = getFileList(dir); 
+
+for (i=0; i<list.length; i++) { 
+     if (endsWith(list[i], ".tif")){ 
+               print(i + ": " + dir+list[i]); 
+             open(dir+list[i]); 
+             imgName=getTitle(); 
+         baseNameEnd=indexOf(imgName, ".tif"); 
+         baseName=substring(imgName, 0, baseNameEnd); 
+
+         run("Split Channels"); 
+
+         selectWindow("C1-" + imgName); 
+         rename(baseName + "-blue.tiff"); 
+         saveAs("Tiff", splitDir + "C1-" +baseName + ".tif"); 
+         close();
+         selectWindow("C2-" + imgName); 
+         saveAs("Tiff", splitDir + "C2-" + baseName + ".tif"); 
+         run("Close All"); 
+     } 
+}
+
+
+// MAX-Z-------------------------------------------------------
+
+inputDir = splitDir;
+outputFormats = newArray("TIFF", "8-bit TIFF", "JPEG", "GIF", "PNG", "PGM", "BMP", "FITS", "Text Image", "ZIP", "Raw"); 
+projectionTypes = newArray("Max Intensity", "Min Intensity", "Average Intensity", "Sum Slices", "Standard Deviation", "Median"); 
+Dialog.create("Select MIP options"); 
+Dialog.addMessage("Please select Batch Projection options"); 
+Dialog.addChoice("Save projection as: ", outputFormats, "TIFF"); 
+Dialog.addChoice("Use Projection Type: ", projectionTypes, "Max Intensity"); 
+Dialog.addString("Default filename appendix", "_MIP"); 
+Dialog.addCheckbox("Convert to 8 bit", true); 
+Dialog.addCheckbox("Recreate existing MIPs", true); 
+Dialog.addCheckbox("Select different output directory", false); 
+Dialog.show(); 
+outputFormat = Dialog.getChoice(); 
+projectionType = Dialog.getChoice(); 
+outputAppendix = Dialog.getString(); 
+outputEightBit = Dialog.getCheckbox(); 
+shouldRecreate = Dialog.getCheckbox(); 
+if( Dialog.getCheckbox()) { 
+  outputDir = getDirectory("Choose an Output Directory"); 
+} else { 
+  outputDir = inputDir; 
+} 
+
+
+setBatchMode(true); 
+run("Bio-Formats Macro Extensions"); 
+count = 0; 
+countFiles(inputDir); 
+n = 0; 
+processFiles(inputDir); 
+//print(count+" files processed"); 
+
+function countFiles(inputDir) { 
+  list = getFileList(inputDir); 
+  for (i=0; i<list.length; i++) { 
+    if (endsWith(list[i], "/")) 
+      countFiles(""+inputDir+list[i]); 
+    else 
+      count++; 
+  } 
+} 
+
+function processFiles(inputDir) { 
+  list = getFileList(inputDir); 
+  for (i=0; i<list.length; i++) { 
+    if (endsWith(list[i], "/")) 
+      processFiles(""+inputDir+list[i]); 
+    else { 
+      showProgress(n++, count); 
+      path = inputDir+list[i]; 
+      processFile(path); 
+    } 
+  } 
+} 
+
+function processFile(path) { 
+  outfileName = File.getName(path); 
+  outfileName = substring( outfileName, 0, lastIndexOf(outfileName, ".")); 
+
+  // is the file itself a projection (we have created)? 
+  if( !endsWith(outfileName, outputAppendix)) { 
+    //outfileName = replace(path, ".", "_"); 
+    //if( shouldRecreate || !File.exists(outputDir+outfileName)) { 
+      run("Bio-Formats Importer", "open=["+path+"] view=[Standard ImageJ] stack_order=Default split_channels split_timepoints open_all_series use_virtual_stack"); 
+      if( nSlices > 1) { 
+        run("Z Project...", "start=1 stop="+nSlices+" projection=["+projectionType+"]"); 
+        if( outputEightBit && bitDepth() % 16 == 0) { 
+          //getHistogram(values, counts, nBins[, histMin, histMax]) 
+          //setMinAndMax(min, max); 
+          //setAutoThreshold(); 
+          run("8-bit"); 
+        } 
+        saveAs(outputFormat, outputDir+ outfileName+outputAppendix); 
+        close(); 
+      } 
+      close(); 
+    //} 
+  } 
+} 
+split.txt
+Displaying split.txt.
