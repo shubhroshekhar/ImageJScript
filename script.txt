@@ -1,20 +1,3 @@
-
-
-Skip to content
-Using Gmail with screen readers
-in:sent 
-
-5 of 171
-test4
-
-Shubhro Shekhar <shubhroshekhar@gmail.com>
-Attachments
-Sun, Sep 15, 10:19 PM (3 days ago)
-to Shambhabi
-
-
-Attachments area
-
 requires("1.33s"); 
 
 dir=getDirectory("Choose a Directory"); 
@@ -54,8 +37,8 @@ Dialog.create("Select MIP options");
 Dialog.addMessage("Please select Batch Projection options"); 
 Dialog.addChoice("Save projection as: ", outputFormats, "TIFF"); 
 Dialog.addChoice("Use Projection Type: ", projectionTypes, "Max Intensity"); 
-Dialog.addString("Default filename appendix", "_MIP"); 
-Dialog.addCheckbox("Convert to 8 bit", true); 
+Dialog.addString("Default filename prefix", "MAX_"); 
+Dialog.addCheckbox("Convert to 8 bit", false); 
 Dialog.addCheckbox("Recreate existing MIPs", true); 
 Dialog.addCheckbox("Select different output directory", false); 
 Dialog.show(); 
@@ -119,12 +102,10 @@ function processFile(path) {
           //setAutoThreshold(); 
           run("8-bit"); 
         } 
-        saveAs(outputFormat, outputDir+ outfileName+outputAppendix); 
+        saveAs(outputFormat, outputDir+ outputAppendix +outfileName); 
         close(); 
       } 
       close(); 
     //} 
   } 
 } 
-split.txt
-Displaying split.txt.
