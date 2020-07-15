@@ -1,5 +1,5 @@
 /*
- * This Macro will convert (.lif) files to (.tiff) files, and find maxZ. 
+ * This Macro will convert (.lif) files to (.tiff) files, and create maxZ. 
  * i took help from Nuno PimpÃƒÂ£o Martins's Lif to Tiff macro in format conversion part.
  * autor: Shubhro Shekhar
  */
