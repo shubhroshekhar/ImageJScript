@@ -1,0 +1,239 @@
+/*
+ * This Macro will convert (.lif) files to (.tiff) files, and find maxZ. 
+ * i took help from Nuno PimpÃƒÂ£o Martins's Lif to Tiff macro in format conversion part.
+ * autor: Shubhro Shekhar
+ */
+
+requires("1.33s");
+
+
+setBatchMode(true); //can make the macro faster by not displaying the files
+print("\\Clear");
+
+run("Bio-Formats Macro Extensions"); //enables Bio-Formats command lines
+fs = File.separator;
+
+// batch = getBoolean("Convert multiple files? (Batch Mode)");
+if (true){
+print("Batch Mode: On");
+directory = getDirectory("Choose folder to convert");
+print("Parent folder: "+directory);
+filelist = getFileList(directory);
+
+if (endsWith(directory, "\\")==true) {
+directory = substring(directory, 0, lengthOf(directory)-1);
+};
+
+series_array = newArray();
+total_series = 0;
+images = 0;
+for(j=0;j<filelist.length;j++){
+if(endsWith(filelist[j], ".lif")==true || endsWith(filelist[j], ".nd")==true || endsWith(filelist[j], ".nd2")==true) {
+Ext.setId(directory+fs+filelist[j]);
+Ext.getSeriesCount(seriesCount);
+series_array = Array.concat(series_array, filelist[j]+"; "+seriesCount);
+total_series += seriesCount;
+images += 1;
+};
+};
+
+Dialog.create("Lif to Tiff (Batch Mode)");
+Dialog.addMessage("Check destination save folder and format.");
+Dialog.addMessage("Parent folder: "+directory);
+Dialog.addMessage("Number of items in folder: "+filelist.length);
+Dialog.addMessage("Number of image files in folder: "+images);
+Dialog.addMessage("Total number of series in folder: "+total_series);
+Dialog.addChoice("File format: ", newArray("tiff", "ome tiff"));
+Dialog.show();
+format = Dialog.getChoice();
+print("Saving format: "+format);
+
+current_series = 0;
+for(k=0;k<filelist.length;k++) {
+if (endsWith(filelist[k], "/")==false && endsWith(filelist[k], "\\")==false && endsWith(filelist[k], fs)==false) {
+filename = filelist[k];
+print("________________\nFilename: "+filename);
+if (endsWith(filename, ".lif") == true) {
+title = substring(filename, 0, indexOf(filename, ".lif"));
+} else if(endsWith(filename, ".nd") == true) {
+title = substring(filename, 0, indexOf(filename, ".nd"));
+} else if(endsWith(filename, ".nd2") == true) {
+title = substring(filename, 0, indexOf(filename, ".nd2"));
+};
+
+File.makeDirectory(directory+fs+title+" "+format+fs);
+save_dir = directory+fs+title+" "+format+fs;
+print("Save directory: "+save_dir);
+
+
+if (nImages < 1) {
+Ext.setId(directory+fs+filelist[k]);
+Ext.getSeriesCount(seriesCount);
+for (m=1; m <= seriesCount; m++) {
+run("Bio-Formats Importer", "open=["+directory+fs+filelist[k]+"] autoscale color_mode=Default view=Hyperstack stack_order=XYCZT series_"+m+"");
+title = getTitle();
+title = removeFileName(title,filelist[k]);
+title_part = charPurge(title);
+print("_\n Current file series nr: "+IJ.pad(m, lengthOf(toString(seriesCount)))+" of "+seriesCount);
+print("Original title: "+title);
+print("New Title (without special charaters): "+title_part);
+print("Saving to: "+save_dir);
+if (format == "tiff") {
+saveAs("Tiff", save_dir+fs+title_part+".tif");
+} else if (format == "ome tiff"){
+run("Bio-Formats Exporter", "save=["+save_dir+fs+title_part+".ome.tif] compression=Uncompressed");
+}
+close();
+current_series += 1;
+showProgress(current_series/total_series);
+};
+};
+run("Close All");
+//////////////
+
+
+            dir=save_dir;
+            print(dir);
+            splitDir=dir + fs +"Split" + fs;
+            maxZDir=dir + fs +"MaxZ" + fs;
+            print(splitDir);
+            File.makeDirectory(splitDir);
+            File.makeDirectory(maxZDir);
+            list = getFileList(dir);
+
+            for (i=0; i<list.length; i++) {
+                if (endsWith(list[i], ".tif")){
+                        print(i + ": " + dir+list[i]);
+                        open(dir+list[i]);
+                        imgName=getTitle();
+                    baseNameEnd=indexOf(imgName, ".tif");
+                    baseName=substring(imgName, 0, baseNameEnd);
+
+                    run("Split Channels");
+
+                    selectWindow("C1-" + imgName);
+                    rename(baseName + "-blue.tiff");
+                    saveAs("Tiff", splitDir + "C1-" +baseName + ".tif");
+                    close();
+                    selectWindow("C2-" + imgName);
+                    saveAs("Tiff", splitDir + "C2-" + baseName + ".tif");
+                    run("Close All");
+                }
+            }
+
+
+            // MAX-Z-------------------------------------------------------
+
+            inputDir = splitDir;
+            outputFormats = newArray("TIFF", "8-bit TIFF", "JPEG", "GIF", "PNG", "PGM", "BMP", "FITS", "Text Image", "ZIP", "Raw");
+            projectionTypes = newArray("Max Intensity", "Min Intensity", "Average Intensity", "Sum Slices", "Standard Deviation", "Median");
+            outputFormat = "TIFF";
+            projectionType = "Max Intensity";
+            outputAppendix = "MAX_";
+            outputEightBit =false;
+            shouldRecreate = true;
+            outputDir = maxZDir;
+           
+
+
+            setBatchMode(true);
+            run("Bio-Formats Macro Extensions");
+            count = 0;
+            countFiles(inputDir);
+            n = 0;
+            processFiles(inputDir);
+            //print(count+" files processed");
+
+            function countFiles(inputDir) {
+            list = getFileList(inputDir);
+            for (i=0; i<list.length; i++) {
+                if (endsWith(list[i], "/"))
+                countFiles(""+inputDir+list[i]);
+                else
+                count++;
+            }
+            }
+
+            function processFiles(inputDir) {
+            list = getFileList(inputDir);
+            for (i=0; i<list.length; i++) {
+                if (endsWith(list[i], "/"))
+                processFiles(""+inputDir+list[i]);
+                else {
+                showProgress(n++, count);
+                path = inputDir+list[i];
+                processFile(path);
+                }
+            }
+            }
+
+            function processFile(path) {
+            outfileName = File.getName(path);
+            outfileName = substring( outfileName, 0, lastIndexOf(outfileName, "."));
+
+            // is the file itself a projection (we have created)?
+            if( !endsWith(outfileName, outputAppendix)) {
+                //outfileName = replace(path, ".", "_");
+                //if( shouldRecreate || !File.exists(outputDir+outfileName)) {
+                run("Bio-Formats Importer", "open=["+path+"] view=[Standard ImageJ] stack_order=Default split_channels split_timepoints open_all_series use_virtual_stack");
+                if( nSlices > 1) {
+                    run("Z Project...", "start=1 stop="+nSlices+" projection=["+projectionType+"]");
+                    if( outputEightBit && bitDepth() % 16 == 0) {
+                    //getHistogram(values, counts, nBins[, histMin, histMax])
+                    //setMinAndMax(min, max);
+                    //setAutoThreshold();
+                    run("8-bit");
+                    }
+                    saveAs(outputFormat, outputDir+ outputAppendix +outfileName);
+                    close();
+                }
+                close();
+                //}
+            }
+            }
+           
+
+            //////////////
+};
+};
+}
+print("Files converted to " + format);
+setBatchMode(false);
+
+
+function charPurge(string) {
+string = toLowerCase(string);
+while(indexOf(string, "(")>=0 || indexOf(string, ")") >= 0 || indexOf(string, "/") >= 0 || indexOf(string, "\\") >= 0 || indexOf(string, "\"")>=0 ) {
+if (indexOf(string, "(")>=0) {
+string = replace(string, "(", " ");
+} else if (indexOf(string, ")")>=0) {
+string = replace(string, ")", " ");
+} else if (indexOf(string, "\\")>=0) {
+string = replace(string, "\\", " ");
+} else if (indexOf(string, "/")>=0) {
+string = replace(string, "/", " ");
+} else if (indexOf(string, "\"")>=0) {
+string = replace(string, "\"", " ");
+};
+};
+while(indexOf(string, ".tif")>=0 || indexOf(string, ".tiff") >= 0 || indexOf(string, ".lif") >= 0 || indexOf(string, ".nd") >= 0 || indexOf(string, ".nd2")>=0 ) {
+if (indexOf(string, ".tif")>=0) {
+string = replace(string, ".tif", " ");
+} else if (indexOf(string, ".tiff") >=0) {
+string = replace(string, ".tiff", " ");
+} else if (indexOf(string, ".lif")>=0) {
+string = replace(string, ".lif", " ");
+} else if (indexOf(string, ".nd") >=0) {
+string = replace(string, ".nd", " ");
+} else if (indexOf(string, ".nd2") >= 0) {
+string = replace(string, ".nd2", " ");
+};
+};
+return string;
+};
+
+function removeFileName (imageName, fileName) {
+name = replace(imageName, fileName + " -", "");
+return name;
+
+};
