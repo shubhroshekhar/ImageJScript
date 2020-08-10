@@ -59,6 +59,8 @@ title = substring(filename, 0, indexOf(filename, ".lif"));
 title = substring(filename, 0, indexOf(filename, ".nd"));
 } else if(endsWith(filename, ".nd2") == true) {
 title = substring(filename, 0, indexOf(filename, ".nd2"));
+} else if(endsWith(filename, ".czi") == true) {
+title = substring(filename, 0, indexOf(filename, ".czi"));
 };
 
 File.makeDirectory(directory+fs+title+" "+format+fs);
