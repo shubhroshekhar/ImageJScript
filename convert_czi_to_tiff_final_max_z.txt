@@ -187,7 +187,13 @@ run("Close All");
                     //setAutoThreshold();
                     run("8-bit");
                     }
-                    saveAs(outputFormat, outputDir+ outputAppendix +outfileName);
+                    newFolderName = replace(outfileName,"MAX_","");
+        			newFolderName = replace(newFolderName,"C2-","");
+        			newFolderName = replace(newFolderName,"C1-","");
+                    if (!File.exists(outputDir + fs + newFolderName)) {
+                        File.makeDirectory(outputDir + fs + newFolderName);
+                    }
+                    saveAs(outputFormat, outputDir+ newFolderName +fs+outputAppendix +outfileName);
                     close();
                 }
                 close();
