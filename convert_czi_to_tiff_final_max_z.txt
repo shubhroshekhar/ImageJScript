@@ -1,5 +1,5 @@
 /*
- * This Macro will convert (.lif) files to (.tiff) files, and create maxZ for each channel. 
+ * This Macro will convert (.czi) files to (.tiff) files, and create maxZ for each channel. 
  * i took help from Nuno PimpÃƒÂ£o Martins's Lif to Tiff macro in format conversion part.
  * autor: Shubhro Shekhar
  */
@@ -37,7 +37,7 @@ images += 1;
 };
 };
 
-Dialog.create("Lif to Tiff (Batch Mode)");
+Dialog.create("CZI to Tiff (Batch Mode)");
 Dialog.addMessage("Check destination save folder and format.");
 Dialog.addMessage("Parent folder: "+directory);
 Dialog.addMessage("Number of items in folder: "+filelist.length);
@@ -59,12 +59,13 @@ title = substring(filename, 0, indexOf(filename, ".lif"));
 title = substring(filename, 0, indexOf(filename, ".nd"));
 } else if(endsWith(filename, ".nd2") == true) {
 title = substring(filename, 0, indexOf(filename, ".nd2"));
-} else if(endsWith(filename, ".czi") == true) {
-title = substring(filename, 0, indexOf(filename, ".czi"));
 };
 
-File.makeDirectory(directory+fs+title+" "+format+fs);
-save_dir = directory+fs+title+" "+format+fs;
+
+save_dir = directory+fs+format+fs;
+
+File.makeDirectory(save_dir);
+
 print("Save directory: "+save_dir);
 
 
@@ -186,7 +187,13 @@ run("Close All");
                     //setAutoThreshold();
                     run("8-bit");
                     }
-                    saveAs(outputFormat, outputDir+ outputAppendix +outfileName);
+                    newFolderName = replace(outfileName,"MAX_","");
+        			newFolderName = replace(newFolderName,"C2-","");
+        			newFolderName = replace(newFolderName,"C1-","");
+                    if (!File.exists(outputDir + fs + newFolderName)) {
+                        File.makeDirectory(outputDir + fs + newFolderName);
+                    }
+                    saveAs(outputFormat, outputDir+ newFolderName +fs+outputAppendix +outfileName);
                     close();
                 }
                 close();
